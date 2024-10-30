@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
+import { useLocation } from 'react-router-dom';
 
 const supabase = createClient('https://wtkwfzrdqxsdueyooqtr.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0a3dmenJkcXhzZHVleW9vcXRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzAyODY2OTAsImV4cCI6MjA0NTg2MjY5MH0.5LJP-tBA41weLnmfgKM6bFYQm5mSeOn234xPzZrOtfU')
 
@@ -15,6 +16,11 @@ export default function Main() {
   const [email, setEmail] = useState('');
   const [resetStatus, setResetStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { search } = useLocation();
+  const queryParams = new URLSearchParams(search);
+  const accessToken = queryParams.get('access_token');
+
+  console.log('Access Token:', accessToken); // Debugging
 
   // useEffect(() => {
   //   supabase.auth.getSession().then(({ data: { session } }) => {
@@ -29,8 +35,15 @@ export default function Main() {
   // }, [])
   useEffect(() => {
     const fetchSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
+      if (accessToken) {
+        const { error } = await supabase.auth.setSession({ access_token: accessToken });
+        if (error) {
+          console.error('Error setting session:', error.message);
+        }
+      } else {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+      }
     };
 
     fetchSession();
@@ -40,7 +53,7 @@ export default function Main() {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [accessToken]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -50,7 +63,7 @@ export default function Main() {
   const handleResetPassword = async () => {
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'http://localhost:3000/reset-password'
+      redirectTo: `http://localhost:3000/reset-password?access_token=`
     });
     setLoading(false);
     if (error) {
@@ -76,7 +89,9 @@ export default function Main() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <button onClick={handleResetPassword} disabled={loading}>Reset Password</button>
+        <button onClick={handleResetPassword} disabled={loading}>
+          {loading ? 'Sending...' : 'Reset Password'}
+        </button>
         {resetStatus && <p>{resetStatus}</p>}
       </div>
     )
