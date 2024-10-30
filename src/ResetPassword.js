@@ -11,7 +11,7 @@ function ResetPassword() {
   const [success, setSuccess] = useState(false);
   const queryParams = new URLSearchParams(search);
   const accessToken = queryParams.get('access_token');
-  
+
   console.log('Access Token:', accessToken); // Debugging
 
   const handleReset = async () => {

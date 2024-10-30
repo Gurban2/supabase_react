@@ -19,8 +19,9 @@ export default function Main() {
   const { search } = useLocation();
   const queryParams = new URLSearchParams(search);
   const accessToken = queryParams.get('access_token');
+  const [userAccessToken, setUserAccessToken] = useState(null);
 
-  console.log('Access Token:', accessToken); // Debugging
+  // console.log('Access Token:', userAccessToken); // Debugging
 
   // useEffect(() => {
   //   supabase.auth.getSession().then(({ data: { session } }) => {
@@ -52,18 +53,39 @@ export default function Main() {
       setSession(session);
     });
 
+    
+
     return () => subscription.unsubscribe();
   }, [accessToken]);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (session) {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error(error);
+        } else {
+          console.log('User:', data.user); 
+          setUserAccessToken(data.user?.access_token);
+          console.log('User:', data.user?.access_token);
+          
+        }
+      }
+    };
+
+    fetchUser();
+  }, [session]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setSession(null)
   }
+  
 
   const handleResetPassword = async () => {
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `http://localhost:3000/reset-password?access_token=`
+      redirectTo: `http://localhost:3000/reset-password?access_token=token`
     });
     setLoading(false);
     if (error) {
