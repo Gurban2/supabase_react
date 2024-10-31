@@ -27,8 +27,9 @@ export default function Main() {
   const isValidToken = (token) => {
     try {
       const decoded = jwtDecode(token);
-      const now = Math.floor(Date.now() / 1000); // Current time in seconds
-      return decoded.exp > now; // true if not expired
+      return decoded.exp > Math.floor(Date.now() / 1000);
+      // const now = Math.floor(Date.now() / 1000); // Current time in seconds
+      // return decoded.exp > now; // true if not expired
     } catch (error) {
       console.error('Invalid token:', error);
       return false; // Invalid token
@@ -84,12 +85,18 @@ export default function Main() {
   // }, [session]);
  
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-    setUserAccessToken(null); // Clear the access token on logout
-  }  
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error.message);
+    } else {
+      setSession(null);
+      setUserAccessToken(null);
+    }
+    // setSession(null);
+    // setUserAccessToken(null); // Clear the access token on logout
+  } ; 
   
-  const handleResetPassword = async () => {
+  const handleResetPasswordOutAuth = async () => {
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       //  redirectTo: `http://localhost:3000/reset-password?`
@@ -101,6 +108,22 @@ export default function Main() {
       setResetStatus('Check your email for the reset link!');
     }
   };
+
+  async function handleForgotPassword(email) {
+    setLoading(true);
+    const { error } = await supabase.auth.api.resetPasswordForEmail(email);
+    setLoading(false);
+    if (error) {
+        console.error('Error sending reset email:', error.message);
+        setResetStatus('Error sending reset email. Please try again.');
+    } else {
+        console.log('Reset email sent successfully!');
+    }
+};
+
+const handleResetPassword = () => {
+  handleForgotPassword(email);
+};
 
   if (!session) {
     return (      
@@ -114,8 +137,7 @@ export default function Main() {
           setUserAccessToken(session.access_token); // Access token after sign-in
         }}
         // view='update_password'
-      />
-      
+      />      
     );
   } else {
     return (      
@@ -130,7 +152,7 @@ export default function Main() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <button onClick={handleResetPassword} disabled={loading}>
+        <button onClick={handleResetPasswordOutAuth} disabled={loading}>
           {loading ? 'Sending...' : 'Reset Password'}
         </button>
         {resetStatus && <p>{resetStatus}</p>}
