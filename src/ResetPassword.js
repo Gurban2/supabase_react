@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
+import { GlobalStyle } from "./styles";
 
 const supabase = createClient('https://wtkwfzrdqxsdueyooqtr.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0a3dmenJkcXhzZHVleW9vcXRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzAyODY2OTAsImV4cCI6MjA0NTg2MjY5MH0.5LJP-tBA41weLnmfgKM6bFYQm5mSeOn234xPzZrOtfU');
 
@@ -10,33 +11,31 @@ function ResetPassword() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const queryParams = new URLSearchParams(search);
-  const accessToken = queryParams.get('access_token');
+  const tokenHash = queryParams.get('token_hash'); // Get the token_hash
 
-  console.log('Access Token:', accessToken); // Debugging
+  // console.log('Hash Token:', tokenHash); // Debugging
 
   const handleReset = async () => {
-    if (!accessToken) {
-      setError('Invalid or missing access token');
+    if (!tokenHash) {
+      setError('Invalid or missing token');
       return;
-    }
+    }  
 
-    // Set the session with the access token
-    const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken });
-    if (sessionError) {
-      setError('Error setting session: ' + sessionError.message);
-      return;
-    }
-
-    // Update user password
-    const { error } = await supabase.auth.updateUser({ password });
+    // Call the updateUser method
+    const { error } = await supabase.auth.updateUser({
+      password,
+      // Token is used here for context, not as an access token
+      email: '', // If you want to pass an email, you can include it here
+    });
     if (error) {
       setError('Error updating password: ' + error.message);
     } else {
       setSuccess(true);
     }
-  };
+  }; 
 
   return (
+    <GlobalStyle>
     <div>
       <h2>Reset Your Password</h2>
       {success ? (
@@ -54,6 +53,7 @@ function ResetPassword() {
         </>
       )}
     </div>
+    </GlobalStyle>
   );
 }
 
